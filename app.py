@@ -18,10 +18,12 @@ import yfinance as yf
 import mplfinance as mpf
 import pyimgur
 import requests, json, time
+import place
 
 app = Flask(__name__)
 IMGUR_CLIENT_ID = '518d1b40a39841f'
 access_token = '73NO2oXidQK+5zX6bp/0Ne7gKEeYP+b5XXifSlQcjxg6l4g1BKpcnyYPmKIFbCklhzLlTq8k/nO81Zs/OEULJLUHQi4NcxRgrnmAk2ieRSyO4/SzKe4cwag0bzDbr/Q2fbJaH8+LiRPVR4eJFzxY1AdB04t89/1O/w1cDnyilFU='
+mat_d={}
 
 def plot_stock_k_chart(IMGUR_CLIENT_ID, stock='0050', date_from='2020-01-01'):
     stock = str(stock) + ".TW"
@@ -485,7 +487,21 @@ def handle_message(event):
         while True: 
             schedule.run_pending()
             time.sleep(1)
+#############weather##############################################################
+#圖文選單
+#第一層 最新氣象->四格圖片 Flex Message
+    if re.match('最新氣象|查詢天氣|天氣查詢|weather|Weather',msg):
+        content=place.img_Carousel()
+        line_bot_api.reply_message(event.reply_token,content)
+        return 0
+################################1.即時天氣#########################################
+#1.第二層即時天氣->呼叫quick_reply
 
+    if re.match('即時天氣|即時氣象', msg):
+        mat_d[uid]='即時天氣'
+        content=place.quick_reply_weather(mat_d[uid])
+        line_bot_api.reply_message(event.reply_token, content)
+        return 0
 
 import os
 if __name__ == "__main__":

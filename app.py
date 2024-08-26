@@ -17,9 +17,11 @@ import twder
 import yfinance as yf
 import mplfinance as mpf
 import pyimgur
+import requests, json, time
 
 app = Flask(__name__)
 IMGUR_CLIENT_ID = '518d1b40a39841f'
+access_token = '73NO2oXidQK+5zX6bp/0Ne7gKEeYP+b5XXifSlQcjxg6l4g1BKpcnyYPmKIFbCklhzLlTq8k/nO81Zs/OEULJLUHQi4NcxRgrnmAk2ieRSyO4/SzKe4cwag0bzDbr/Q2fbJaH8+LiRPVR4eJFzxY1AdB04t89/1O/w1cDnyilFU='
 
 def plot_stock_k_chart(IMGUR_CLIENT_ID, stock='0050', date_from='2020-01-01'):
     stock = str(stock) + ".TW"
@@ -112,6 +114,42 @@ def callback():
         abort(400)
 
     return 'OK'
+
+def callback():
+    signature = request.headers['X-Line-Signature']
+
+    body = request.get_data(as_text=True)
+    app.logger.info("Request body: " + body)
+
+    try:
+        handler.handle(body, signature)
+        json_data = json.loads(body)
+        reply_token = json_data['events'][0]['replyToken']
+        user_id = json_data['events'[0]]['source']['userId']
+        print(json_data)
+
+        if 'message' in json_data['events'][0]:
+            if json_data['events'][0]['message']['type'] == 'text':
+                text= json_data['events'][0]['message']['text']
+                if text == '雷達回波圖' or text == '雷達回波':
+                    reply_image(f'https://cwbopendata.s3.ap-northeast-1.amazonaws.com/MSC/O-A0058-003.png?{time.time_ns()}', reply_token, access_token)
+    except:
+        print('error')
+    return 'OK'
+                                
+def reply_image(msg, rk, token):
+    headers = {'Authorization':f'Bearer {token}','Content-Type':'application/json'}
+    body = {
+    'replyToken':rk,
+    'messages':[{
+            'type': 'image',
+            'originalContentUrl':msg,
+            'previewImageUrl':msg
+        }]
+    }
+    req = requests.request('POST', 'https://api.line.me/v2/bot/message/reply', headers=headers,data=json.dumps(body).encode('utf-8'))
+    print(req.text)
+
 # 處理訊息
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
@@ -123,7 +161,7 @@ def handle_message(event):
     usespeak=str(event.message.text) #使用者講的話
     uid = profile.user_id #使用者ID
     user_name = profile.display_name #使用者名稱
-    
+
     ######################## 匯率區 ##############################################    
     if re.match("匯率大小事", msg):
         btn_msg = Msg_Template.stock_reply_rate()
